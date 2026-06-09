@@ -6510,6 +6510,36 @@ const ORDEN_CLAS = ["Excelente","Muy bueno","Bueno","Regular","Deficiente","Sin 
 const GRID = "rgba(236,227,208,.09)";
 const REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+const doughnutPctPlugin = {
+  id: 'doughnutPct',
+  afterDatasetDraw(chart) {
+    if (chart.config.type !== 'doughnut') return;
+    const {ctx, data} = chart;
+    const meta = chart.getDatasetMeta(0);
+    if (!meta || !meta.data.length) return;
+    const total = data.datasets[0].data.reduce((s, v) => s + (v || 0), 0);
+    if (!total) return;
+    meta.data.forEach((arc, i) => {
+      const val = data.datasets[0].data[i] || 0;
+      const pct = val / total * 100;
+      if (pct < 5) return;
+      const midAngle = (arc.startAngle + arc.endAngle) / 2;
+      const midRadius = (arc.outerRadius + arc.innerRadius) / 2;
+      const lx = arc.x + Math.cos(midAngle) * midRadius;
+      const ly = arc.y + Math.sin(midAngle) * midRadius;
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 4;
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 14px Archivo,system-ui,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pct.toFixed(1) + '%', lx, ly);
+      ctx.restore();
+    });
+  }
+};
+
 Chart.defaults.color = C('--muted');
 Chart.defaults.font.family = "Archivo,system-ui,sans-serif";
 Chart.defaults.font.size = 12;
@@ -6557,7 +6587,7 @@ function initCharts(){
       scales:{x:{min:70,max:100,grid:{color:GRID},ticks:{callback:v=>v+'%'}},y:{grid:{display:false},ticks:{color:C('--cream'),font:{size:13}}}},
       plugins:{legend:{display:false},tooltip:tt(c=>' '+c.raw.toFixed(2)+'% · clic para ver ítems')}}});
 
-  charts.dona=new Chart(dona,{type:'doughnut',
+  charts.dona=new Chart(dona,{type:'doughnut',plugins:[doughnutPctPlugin],
     data:{labels:[],datasets:[{data:[],backgroundColor:[],borderColor:C('--bg'),borderWidth:3}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
       onClick:(e,els)=>{if(!els.length)return;const lb=charts.dona.data.labels[els[0].index],fc=document.getElementById('f-clas');if(estado.clas===lb){estado.clas='';fc.value='';}else{estado.clas=lb;fc.value=lb;}render();},
@@ -6577,7 +6607,7 @@ function initCharts(){
       scales:{y:{grid:{color:GRID},ticks:{precision:0}},x:{grid:{display:false},title:{display:true,text:'% de satisfacción (rangos de 5%)',color:C('--dim'),font:{family:'Caveat',size:16}}}},
       plugins:{legend:{display:false},tooltip:tt()}}});
 
-  charts.genero=new Chart(genero,{type:'doughnut',
+  charts.genero=new Chart(genero,{type:'doughnut',plugins:[doughnutPctPlugin],
     data:{labels:[],datasets:[{data:[],backgroundColor:['#cd7f5a','#9cab63','#ddb84a','#8a7f6b'],borderColor:C('--bg'),borderWidth:3}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
       onClick:(e,els)=>{if(!els.length)return;const lb=charts.genero.data.labels[els[0].index],fg=document.getElementById('f-genero');if(estado.genero===lb){estado.genero='';fg.value='';}else{estado.genero=lb;fg.value=lb;}render();},
